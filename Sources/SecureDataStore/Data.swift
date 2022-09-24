@@ -46,4 +46,8 @@ extension Data {
      CC_SHA1((self as NSData).bytes, CC_LONG(count), UnsafeMutablePointer<UInt8>(result.mutableBytes))
      return (NSData(data: result as Data) as Data)
      }*/
+    
+    func hex () -> String {
+        return self.map { String(format: "%02x", $0) }.joined()
+    }
 }
