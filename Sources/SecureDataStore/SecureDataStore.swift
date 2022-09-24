@@ -8,10 +8,10 @@ public class SecureDataStore {
     let documentDirectory:URL
     let keep:Int
     
-    convenience init (salt:String, keep:Int) {
+    public convenience init (salt:String, keep:Int) {
         self.init(salt:salt, keep:keep, documentDirectory:SecureDataStore.defaultDocumentDirectory, infoFileSuffix:"_info")
     }
-    init (salt:String, keep:Int, documentDirectory:URL, infoFileSuffix:String = "_info") {
+    public init (salt:String, keep:Int, documentDirectory:URL, infoFileSuffix:String = "_info") {
         self.documentDirectory = documentDirectory
         self.sel = salt.data(using: String.Encoding.utf8)!
         self.infoFileSuffix = infoFileSuffix
