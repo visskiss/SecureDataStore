@@ -6,14 +6,16 @@ public class SecureDataStore {
     let sel: Data
     let infoFileSuffix:String
     let documentDirectory:URL
+    let keep:Int
     
-    convenience init (salt:String) {
-        self.init(salt:salt, documentDirectory:SecureDataStore.defaultDocumentDirectory, infoFileSuffix:"_info")
+    convenience init (salt:String, keep:Int) {
+        self.init(salt:salt, keep:keep, documentDirectory:SecureDataStore.defaultDocumentDirectory, infoFileSuffix:"_info")
     }
-    init (salt:String, documentDirectory:URL, infoFileSuffix:String = "_info") {
+    init (salt:String, keep:Int, documentDirectory:URL, infoFileSuffix:String = "_info") {
         self.documentDirectory = documentDirectory
         self.sel = salt.data(using: String.Encoding.utf8)!
         self.infoFileSuffix = infoFileSuffix
+        self.keep = keep
     }
     
     
@@ -53,36 +55,39 @@ public class SecureDataStore {
             }
         } while returnData == nil
         DispatchQueue.main.async(group: nil, qos: .utility, flags: []) {
-            self.removeOldest(for:fileName)
+            self.removeOldest(for:fileName, keep:self.keep)
         }
         return returnData!
     }
     
-    public func removeOldest(for identifier:String) {
-        var oldestDate:Date = Date()
-        var oldestURL:URL?
-        var fileCount:Int = 0
+    public func removeOldest(for identifier:String, keep:Int) {
         let enumerator = FileManager.default.enumerator(at: documentDirectory, includingPropertiesForKeys: [.creationDateKey, .isRegularFileKey], options: [.skipsSubdirectoryDescendants, .skipsPackageDescendants, .skipsHiddenFiles], errorHandler: nil)!
-        for case let url as URL in enumerator{
+        //Get all the urls and creation dates
+        var urls  = [(Date,URL)]()
+        for case let url as URL in enumerator {
             if let resourceValues = try? url.resourceValues(forKeys: [.creationDateKey, .isRegularFileKey]) {
                 if resourceValues.isRegularFile! {
                     let fileName = url.lastPathComponent
                     if fileName.hasPrefix(identifier) && !fileName.hasSuffix(infoFileSuffix) {
-                        if oldestURL == nil || oldestDate > resourceValues.creationDate! {
-                            oldestURL = url
-                            oldestDate = resourceValues.creationDate!
-                        }
-                        fileCount += 1
+                        urls.append((resourceValues.creationDate!,url))
                     }
                 
                 }
             }
         }
-        if fileCount > 2 && oldestURL != nil {
-            print(oldestURL!.path)
+        //sort dates oldest last
+        urls.sort {
+            $0.0 > $1.0
+        }
+        if urls.count > keep {
+            let numberToRemove = urls.count - keep
+            urls.removeLast(numberToRemove)
+        }
+        for urlToRemove in urls {
+            print(urlToRemove.1.path)
             do {
-                try FileManager.default.removeItem(at: oldestURL!)
-                let fileInfoUrl = infoFileURL(for: oldestURL!)
+                try FileManager.default.removeItem(at: urlToRemove.1)
+                let fileInfoUrl = infoFileURL(for: urlToRemove.1)
                 if FileManager.default.fileExists(atPath: fileInfoUrl.path) {
                     do {
                         try FileManager.default.removeItem(at: fileInfoUrl)
@@ -92,7 +97,7 @@ public class SecureDataStore {
                 }
             } catch {
                 //non-removable, now what?????
-                print("Can't delete oldest file named \(oldestURL?.path ?? "Nil oldestURL")")
+                print("Can't delete oldest file named \(urlToRemove.1.path)")
             }
 
         }
