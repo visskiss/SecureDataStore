@@ -45,7 +45,7 @@ public class SecureDataStore {
                         do {
                             try FileManager.default.removeItem(at: urlForInfoFile)
                         } catch {
-                            print("Can't delete file info for \(urlForInfoFile.path)")
+                            NSLog("Can't delete file info for \(urlForInfoFile.path)")
                         }
                     }
                 } catch {
@@ -80,27 +80,27 @@ public class SecureDataStore {
             $0.0 > $1.0
         }
         if urls.count > keep {
-            let numberToRemove = urls.count - keep
-            urls.removeLast(numberToRemove)
-        }
-        for urlToRemove in urls {
-            print(urlToRemove.1.path)
-            do {
-                try FileManager.default.removeItem(at: urlToRemove.1)
-                let fileInfoUrl = infoFileURL(for: urlToRemove.1)
-                if FileManager.default.fileExists(atPath: fileInfoUrl.path) {
-                    do {
-                        try FileManager.default.removeItem(at: fileInfoUrl)
-                    } catch {
-                        print("Can't delete file info for \(fileInfoUrl.path)")
+            urls.removeLast(keep)
+            for urlToRemove in urls {
+                NSLog("Deleting outdated:" + urlToRemove.1.lastPathComponent)
+                do {
+                    try FileManager.default.removeItem(at: urlToRemove.1)
+                    let fileInfoUrl = infoFileURL(for: urlToRemove.1)
+                    if FileManager.default.fileExists(atPath: fileInfoUrl.path) {
+                        do {
+                            try FileManager.default.removeItem(at: fileInfoUrl)
+                        } catch {
+                            NSLog("Can't delete file info for \(fileInfoUrl.lastPathComponent)")
+                        }
                     }
+                } catch {
+                    //non-removable, now what?????
+                    NSLog("Can't delete oldest file named \(urlToRemove.1.lastPathComponent)")
                 }
-            } catch {
-                //non-removable, now what?????
-                print("Can't delete oldest file named \(urlToRemove.1.path)")
-            }
 
+            }
         }
+        
     }
     
     
