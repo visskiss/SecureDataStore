@@ -22,8 +22,12 @@ public class SecureDataStore {
     public func storeData(identifier:String, data:Data) {
         let fullName = identifier + "\(Date().timeIntervalSinceReferenceDate)"
         let fileUrl = url(for:fullName)
-        _ = try? data.write(to: fileUrl, options: [.atomic])
-        storeFileInfo(for:fileUrl, data:data)
+        do {
+            try data.write(to: fileUrl, options: [.atomic])
+            storeFileInfo(for:fileUrl, data:data)
+        } catch {
+            NSLog("Unable to store data: " + error.localizedDescription)
+        }
     }
     
    
@@ -77,7 +81,7 @@ public class SecureDataStore {
         }
         //sort dates oldest last
         urls.sort {
-            $0.0 > $1.0
+            $0.0 < $1.0
         }
         if urls.count > keep {
             urls.removeLast(keep)
